@@ -54,7 +54,7 @@ struct dso {
 	size_t phentsize;
 	int refcnt;
 	Sym *syms;
-	uint32_t *hashtab;
+	Elf_Symndx *hashtab;
 	uint32_t *ghashtab;
 	int16_t *versym;
 	char *strings;
@@ -206,7 +206,7 @@ static Sym *sysv_lookup(const char *s, uint32_t h, struct dso *dso)
 {
 	size_t i;
 	Sym *syms = dso->syms;
-	uint32_t *hashtab = dso->hashtab;
+	Elf_Symndx *hashtab = dso->hashtab;
 	char *strings = dso->strings;
 	for (i=hashtab[2+h%hashtab[0]]; i; i=hashtab[2+hashtab[0]+i]) {
 		if ((!dso->versym || dso->versym[i] >= 0)
@@ -905,27 +905,28 @@ static struct dso *load_library(const char *name, struct dso *needed_by)
 
 	/* Catch and block attempts to reload the implementation itself */
 	if (name[0]=='l' && name[1]=='i' && name[2]=='b') {
-		static const char *rp, reserved[] =
-			"c\0pthread\0rt\0m\0dl\0util\0xnet\0";
-		char *z = strchr(name, '.');
-		if (z) {
-			size_t l = z-name;
-			for (rp=reserved; *rp && strncmp(name+3, rp, l-3); rp+=strlen(rp)+1);
-			if (*rp) {
-				if (ldd_mode) {
-					/* Track which names have been resolved
-					 * and only report each one once. */
-					static unsigned reported;
-					unsigned mask = 1U<<(rp-reserved);
-					if (!(reported & mask)) {
-						reported |= mask;
-						dprintf(1, "\t%s => %s (%p)\n",
-							name, ldso.name,
-							ldso.base);
-					}
+		static const char reserved[] =
+			"c.pthread.rt.m.dl.util.xnet.";
+		const char *rp, *next;
+		for (rp=reserved; *rp; rp=next) {
+			next = strchr(rp, '.') + 1;
+			if (strncmp(name+3, rp, next-rp) == 0)
+				break;
+		}
+		if (*rp) {
+			if (ldd_mode) {
+				/* Track which names have been resolved
+				 * and only report each one once. */
+				static unsigned reported;
+				unsigned mask = 1U<<(rp-reserved);
+				if (!(reported & mask)) {
+					reported |= mask;
+					dprintf(1, "\t%s => %s (%p)\n",
+						name, ldso.name,
+						ldso.base);
 				}
-				is_self = 1;
 			}
+			is_self = 1;
 		}
 	}
 	if (!strcmp(name, ldso.name)) is_self = 1;
@@ -1549,7 +1550,7 @@ _Noreturn void __dls3(size_t *sp)
 	}
 
 	/* Attach to vdso, if provided by the kernel */
-	if (search_vec(auxv, &vdso_base, AT_SYSINFO_EHDR)) {
+	if (search_vec(auxv, &vdso_base, AT_SYSINFO_EHDR) && vdso_base) {
 		Ehdr *ehdr = (void *)vdso_base;
 		Phdr *phdr = vdso.phdr = (void *)(vdso_base + ehdr->e_phoff);
 		vdso.phnum = ehdr->e_phnum;
