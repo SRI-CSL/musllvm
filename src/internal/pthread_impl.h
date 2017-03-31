@@ -30,7 +30,6 @@ struct pthread {
 	void *result;
 	struct __ptcb *cancelbuf;
 	void **tsd;
-	pthread_attr_t attr;
 	volatile int dead;
 	struct {
 		volatile void *volatile head;
@@ -96,6 +95,10 @@ struct __timer {
 
 #ifndef DTP_OFFSET
 #define DTP_OFFSET 0
+#endif
+
+#ifndef tls_mod_off_t
+#define tls_mod_off_t size_t
 #endif
 
 #define SIGTIMER 32

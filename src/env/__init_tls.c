@@ -71,7 +71,6 @@ typedef Elf32_Phdr Phdr;
 typedef Elf64_Phdr Phdr;
 #endif
 
-
 static void static_init_tls(size_t *aux)
 {
 	unsigned char *p;
@@ -84,6 +83,8 @@ static void static_init_tls(size_t *aux)
 		phdr = (void *)p;
 		if (phdr->p_type == PT_PHDR)
 			base = aux[AT_PHDR] - phdr->p_vaddr;
+		if (phdr->p_type == PT_DYNAMIC && _DYNAMIC)
+			base = (size_t)_DYNAMIC - phdr->p_vaddr;
 		if (phdr->p_type == PT_TLS)
 			tls_phdr = phdr;
 	}

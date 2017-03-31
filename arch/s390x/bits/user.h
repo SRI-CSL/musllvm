@@ -8,11 +8,11 @@ typedef union {
 
 typedef struct {
 	unsigned fpc;
-	fpreg_t fprs[16];
+	elf_fpreg_t fprs[16];
 } elf_fpregset_t;
 
 #define ELF_NGREG 27
-typedef unsigned long elf_greg_t, elf_gregset_t[ELG_NGREG];
+typedef unsigned long elf_greg_t, elf_gregset_t[ELF_NGREG];
 
 struct _user_psw_struct {
 	unsigned long mask, addr;
@@ -21,16 +21,6 @@ struct _user_psw_struct {
 struct _user_fpregs_struct {
 	unsigned fpc;
 	double fprs[16];
-};
-
-struct _user_regs_struct {
-	struct _user_psw_struct psw;
-	unsigned long gprs[16];
-	unsigned acrs[16];
-	unsigned long orig_gpr2;
-	struct _user_fpregs_struct fp_regs;
-	struct _user_per_struct per_info;
-	unsigned long ieee_instruction_pointer;
 };
 
 struct _user_per_struct {
@@ -42,7 +32,17 @@ struct _user_per_struct {
 	unsigned short perc_atmid;
 	unsigned long address;
 	unsigned char access_id;
-} per_struct;
+};
+
+struct _user_regs_struct {
+	struct _user_psw_struct psw;
+	unsigned long gprs[16];
+	unsigned acrs[16];
+	unsigned long orig_gpr2;
+	struct _user_fpregs_struct fp_regs;
+	struct _user_per_struct per_info;
+	unsigned long ieee_instruction_pointer;
+};
 
 struct user {
 	struct _user_regs_struct regs;
