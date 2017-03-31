@@ -71,6 +71,9 @@ typedef Elf32_Phdr Phdr;
 typedef Elf64_Phdr Phdr;
 #endif
 
+__attribute__((__weak__, __visibility__("hidden")))
+extern const size_t _DYNAMIC[];
+
 static void static_init_tls(size_t *aux)
 {
 	unsigned char *p;
