@@ -65,9 +65,13 @@ from which I was able to extract `libclang_rt.builtins-x86_64.bc` using the comm
 ```
 extract-bc -b libclang_rt.builtins-x86_64.a
 ```
-This bitcode module has definitons for those pesky instrinsics like
-`__mulxc3`, `__mulsc3`, and `__muldc3`.
-
+This bitcode module has definitions for those pesky instrinsics like
+`__mulxc3`, `__mulsc3`, and `__muldc3`:
+```
+define { x86_fp80, x86_fp80 } @__mulxc3(x86_fp80 %__a, x86_fp80 %__b, x86_fp80 %__c, x86_fp80 %__d) #0 {
+...
+}
+```
 Of course all this effort is not very interesting unless you have some fun
 with the bitcode before this final linking phase.
 
