@@ -57,9 +57,18 @@ assembly. Examples of the later are `__clone`, `__syscall`, `setjmp` and `longjm
 
 **Note Bene:** the above works for `llvm-3.5`, for `llvm-3.8` you need to `locate`
 your system `libgcc.a` and add that to the list. When I figure out how to use 
-`compiler-rt` to get around that I will mention it here.
+`compiler-rt` to get around that I will mention it here.  OK so I finally figured 
+out the `compiler-rt` thing.  I built `llvm-3.8.1` using `wllvm` and `wllvm++`
+together with the projects `clang`, `compiler-rt`, `libcxx`, `libcxxabi`, and `lld`, which 
+turned out to be pretty painless. One of the build products was `libclang_rt.builtins-x86_64.a`,
+from which I was able to extract `libclang_rt.builtins-x86_64.bc` using the command:
+```
+extract-bc -b libclang_rt.builtins-x86_64.a
+```
+This bitcode module has definitons for those pesky instrinsics like
+`__mulxc3`, `__mulsc3`, and `__muldc3`.
 
-Of course this is not very interesting unless you have some fun
+Of course all this effort is not very interesting unless you have some fun
 with the bitcode before this final linking phase.
 
 You can also do things like:
