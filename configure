@@ -31,7 +31,7 @@ Optional features:
   --enable-optimize=...   optimize listed components for speed over size [auto]
   --enable-debug          build with debugging information [disabled]
   --enable-warnings       build with recommended warnings flags [disabled]
-  --enable-visibility     use global visibility options to optimize PIC [auto]
+  --enable-visibility     use global visibility options to optimize PIC [no]
   --enable-wrapper=...    build given musl toolchain wrapper [auto]
   --disable-shared        inhibit building shared library [enabled]
   --disable-static        inhibit building static library [enabled]
@@ -135,7 +135,7 @@ target=
 optimize=auto
 debug=no
 warnings=no
-visibility=auto
+visibility=no
 shared=auto
 static=yes
 wrapper=auto
@@ -163,6 +163,7 @@ case "$arg" in
 --disable-debug|--enable-debug=no) debug=no ;;
 --enable-warnings|--enable-warnings=yes) warnings=yes ;;
 --disable-warnings|--enable-warnings=no) warnings=no ;;
+--enable-visibility=auto) visibility=auto ;;
 --enable-visibility|--enable-visibility=yes) visibility=yes ;;
 --disable-visibility|--enable-visibility=no) visibility=no ;;
 --enable-wrapper|--enable-wrapper=yes) wrapper=detect ;;
@@ -249,6 +250,7 @@ fi
 #
 tryflag   CFLAGS_TRY  -Werror=unknown-warning-option
 tryflag   CFLAGS_TRY  -Werror=unused-command-line-argument
+tryflag   CFLAGS_TRY  -Werror=ignored-optimization-argument
 tryldflag LDFLAGS_TRY -Werror=unknown-warning-option
 tryldflag LDFLAGS_TRY -Werror=unused-command-line-argument
 
@@ -505,6 +507,13 @@ tryflag CFLAGS_AUTO -Werror=implicit-int
 tryflag CFLAGS_AUTO -Werror=pointer-sign
 tryflag CFLAGS_AUTO -Werror=pointer-arith
 
+#
+# GCC ignores unused arguements by default, but Clang needs this extra
+# parameter to stop printing warnings about LDFLAGS passed during
+# compiling stage and CFLAGS passed during linking stage.
+#
+tryflag CFLAGS_AUTO -Qunused-arguments
+
 if test "x$warnings" = xyes ; then
 tryflag CFLAGS_AUTO -Wall
 tryflag CFLAGS_AUTO -Wno-parentheses
@@ -590,6 +599,8 @@ tryldflag LDFLAGS_AUTO -Wl,-Bsymbolic-functions
 # Find compiler runtime library
 test -z "$LIBCC" && tryldflag LIBCC -lgcc && tryldflag LIBCC -lgcc_eh
 test -z "$LIBCC" && tryldflag LIBCC -lcompiler_rt
+test -z "$LIBCC" && try_libcc=`$CC -print-libgcc-file-name 2>/dev/null` \
+                 && tryldflag LIBCC "$try_libcc"
 test -z "$LIBCC" && try_libcc=`$CC -print-file-name=libpcc.a 2>/dev/null` \
                  && tryldflag LIBCC "$try_libcc"
 printf "using compiler runtime libraries: %s\n" "$LIBCC"
@@ -698,9 +709,8 @@ esac
 #
 printf "checking whether compiler's long double definition matches float.h... "
 echo '#include <float.h>' > "$tmpc"
-echo '#if LDBL_MANT_DIG == 53' >> "$tmpc"
-echo 'typedef char ldcheck[9-(int)sizeof(long double)];' >> "$tmpc"
-echo '#endif' >> "$tmpc"
+echo '#define C(m,s) (m==LDBL_MANT_DIG && s==sizeof(long double))' >> "$tmpc"
+echo 'typedef char ldcheck[(C(53,8)||C(64,12)||C(64,16)||C(113,16))*2-1];' >> "$tmpc"
 if $CC $CFLAGS_C99FSE \
   -I$srcdir/arch/$ARCH -I$srcdir/arch/generic -I$srcdir/include \
   $CPPFLAGS $CFLAGS -c -o /dev/null "$tmpc" >/dev/null 2>&1 ; then

@@ -58,13 +58,15 @@ static int __getopt_long_core(int argc, char *const *argv, const char *optstring
 	{
 		int colon = optstring[optstring[0]=='+'||optstring[0]=='-']==':';
 		int i, cnt, match;
-		char *opt;
+		char *arg, *opt;
 		for (cnt=i=0; longopts[i].name; i++) {
 			const char *name = longopts[i].name;
 			opt = argv[optind]+1;
 			if (*opt == '-') opt++;
-			for (; *name && *name == *opt; name++, opt++);
+			while (*opt && *opt != '=' && *opt == *name)
+				name++, opt++;
 			if (*opt && *opt != '=') continue;
+			arg = opt;
 			match = i;
 			if (!*name) {
 				cnt = 1;
@@ -74,6 +76,7 @@ static int __getopt_long_core(int argc, char *const *argv, const char *optstring
 		}
 		if (cnt==1) {
 			i = match;
+			opt = arg;
 			optind++;
 			if (*opt == '=') {
 				if (!longopts[i].has_arg) {

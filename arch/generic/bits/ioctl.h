@@ -63,6 +63,7 @@
 #define TIOCGPKT	0x80045438
 #define TIOCGPTLCK	0x80045439
 #define TIOCGEXCL	0x80045440
+#define TIOCGPTPEER	0x5441
 
 #define FIONCLEX	0x5450
 #define FIOCLEX		0x5451
@@ -137,6 +138,7 @@ struct winsize {
 #define SIOCGPGRP       0x8904
 #define SIOCATMARK      0x8905
 #define SIOCGSTAMP      0x8906
+#define SIOCGSTAMPNS    0x8907
 
 #define SIOCADDRT       0x890B
 #define SIOCDELRT       0x890C

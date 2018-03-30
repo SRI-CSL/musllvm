@@ -111,6 +111,7 @@ static int dns_parse_callback(void *c, int rr, const void *data, int len, const 
 {
 	char tmp[256];
 	struct dpc_ctx *ctx = c;
+	if (ctx->cnt >= MAXADDRS) return -1;
 	switch (rr) {
 	case RR_A:
 		if (len != 4) return -1;
@@ -338,8 +339,8 @@ int __lookup_name(struct address buf[static MAXADDRS], char canon[static 256], c
 	/* No further processing is needed if there are fewer than 2
 	 * results or if there are only IPv4 results. */
 	if (cnt<2 || family==AF_INET) return cnt;
-	for (i=0; buf[i].family == AF_INET; i++)
-		if (i==cnt) return cnt;
+	for (i=0; i<cnt; i++) if (buf[i].family != AF_INET) break;
+	if (i==cnt) return cnt;
 
 	int cs;
 	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &cs);

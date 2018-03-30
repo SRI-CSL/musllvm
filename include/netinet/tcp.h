@@ -31,6 +31,11 @@
 #define TCP_SAVE_SYN     27
 #define TCP_SAVED_SYN    28
 #define TCP_REPAIR_WINDOW 29
+#define TCP_FASTOPEN_CONNECT 30
+#define TCP_ULP          31
+#define TCP_MD5SIG_EXT   32
+#define TCP_FASTOPEN_KEY 33
+#define TCP_FASTOPEN_NO_COOKIE 34
 
 #define TCP_ESTABLISHED  1
 #define TCP_SYN_SENT     2
@@ -43,6 +48,15 @@
 #define TCP_LAST_ACK     9
 #define TCP_LISTEN       10
 #define TCP_CLOSING      11
+
+enum {
+	TCP_NLA_PAD,
+	TCP_NLA_BUSY,
+	TCP_NLA_RWND_LIMITED,
+	TCP_NLA_SNDBUF_LIMITED,
+	TCP_NLA_DATA_SEGS_OUT,
+	TCP_NLA_TOTAL_RETRANS,
+};
 
 #if defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
 #define TCPOPT_EOL              0
@@ -190,15 +204,29 @@ struct tcp_info {
 	uint32_t tcpi_data_segs_in;
 	uint32_t tcpi_data_segs_out;
 	uint64_t tcpi_delivery_rate;
+	uint64_t tcpi_busy_time;
+	uint64_t tcpi_rwnd_limited;
+	uint64_t tcpi_sndbuf_limited;
 };
 
 #define TCP_MD5SIG_MAXKEYLEN    80
 
+#define TCP_MD5SIG_FLAG_PREFIX  1
+
 struct tcp_md5sig {
 	struct sockaddr_storage tcpm_addr;
-	uint16_t __tcpm_pad1;
+	uint8_t tcpm_flags;
+	uint8_t tcpm_prefixlen;
 	uint16_t tcpm_keylen;
-	uint32_t __tcpm_pad2;
+	uint32_t __tcpm_pad;
+	uint8_t tcpm_key[TCP_MD5SIG_MAXKEYLEN];
+};
+
+struct tcp_diag_md5sig {
+	uint8_t tcpm_family;
+	uint8_t tcpm_prefixlen;
+	uint16_t tcpm_keylen;
+	uint32_t tcpm_addr[4];
 	uint8_t tcpm_key[TCP_MD5SIG_MAXKEYLEN];
 };
 

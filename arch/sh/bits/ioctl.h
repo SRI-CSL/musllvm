@@ -95,6 +95,7 @@
 #define TIOCGPKT            _IOR('T', 56, int)
 #define TIOCGPTLCK          _IOR('T', 57, int)
 #define TIOCGEXCL           _IOR('T', 64, int)
+#define TIOCGPTPEER         _IO('T', 0x41)
 
 #define TIOCSERCONFIG       _IO('T',  83)
 #define TIOCSERGWILD        _IOR('T', 84, int)
@@ -141,6 +142,7 @@ struct winsize {
 #define SIOCSPGRP       _IOW('s', 8, int)
 #define SIOCGPGRP       _IOW('s', 9, int)
 #define SIOCGSTAMP      _IOR('s', 100, char[8])
+#define SIOCGSTAMPNS    _IOR('s', 101, char[8])
 
 #define SIOCADDRT       0x890B
 #define SIOCDELRT       0x890C

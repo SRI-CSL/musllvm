@@ -68,6 +68,7 @@
 #define TIOCGPKT	_IOR('T', 0x38, int)
 #define TIOCGPTLCK	_IOR('T', 0x39, int)
 #define TIOCGEXCL	_IOR('T', 0x40, int)
+#define TIOCGPTPEER	_IO('T', 0x41)
 
 #define TIOCSCTTY	0x5480
 #define TIOCGSOFTCAR	0x5481
@@ -139,12 +140,13 @@ struct winsize {
 #define N_SYNC_PPP      14
 #define N_HCI           15
 
-#define FIOSETOWN       0x8901
-#define SIOCSPGRP       0x8902
-#define FIOGETOWN       0x8903
-#define SIOCGPGRP       0x8904
-#define SIOCATMARK      0x8905
+#define FIOGETOWN       _IOR('f', 123, int)
+#define FIOSETOWN       _IOW('f', 124, int)
+#define SIOCATMARK      _IOR('s', 7, int)
+#define SIOCSPGRP       _IOW('s', 8, pid_t)
+#define SIOCGPGRP       _IOR('s', 9, pid_t)
 #define SIOCGSTAMP      0x8906
+#define SIOCGSTAMPNS    0x8907
 
 #define SIOCADDRT       0x890B
 #define SIOCDELRT       0x890C

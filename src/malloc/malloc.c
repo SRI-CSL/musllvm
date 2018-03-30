@@ -406,7 +406,7 @@ void *realloc(void *p, size_t n)
 		if (oldlen == newlen) return p;
 		base = __mremap(base, oldlen, newlen, MREMAP_MAYMOVE);
 		if (base == (void *)-1)
-			return newlen < oldlen ? p : 0;
+			goto copy_realloc;
 		self = (void *)(base + extra);
 		self->csize = newlen - extra;
 		return CHUNK_TO_MEM(self);
@@ -439,6 +439,7 @@ void *realloc(void *p, size_t n)
 		return CHUNK_TO_MEM(self);
 	}
 
+copy_realloc:
 	/* As a last resort, allocate a new chunk and copy to it. */
 	new = malloc(n-OVERHEAD);
 	if (!new) return 0;
@@ -449,13 +450,14 @@ void *realloc(void *p, size_t n)
 
 void free(void *p)
 {
-	struct chunk *self = MEM_TO_CHUNK(p);
-	struct chunk *next;
+	struct chunk *self, *next;
 	size_t final_size, new_size, size;
 	int reclaim=0;
 	int i;
 
 	if (!p) return;
+
+	self = MEM_TO_CHUNK(p);
 
 	if (IS_MMAPPED(self)) {
 		size_t extra = self->psize;

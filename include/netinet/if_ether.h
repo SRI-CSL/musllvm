@@ -10,6 +10,8 @@
 #define ETH_DATA_LEN	1500
 #define ETH_FRAME_LEN	1514
 #define ETH_FCS_LEN	4
+#define ETH_MIN_MTU	68
+#define ETH_MAX_MTU	0xFFFFU
 
 #define ETH_P_LOOP	0x0060
 #define ETH_P_PUP	0x0200
@@ -51,6 +53,7 @@
 #define ETH_P_AOE	0x88A2
 #define ETH_P_8021AD	0x88A8
 #define ETH_P_802_EX1	0x88B5
+#define ETH_P_ERSPAN	0x88BE
 #define ETH_P_TIPC	0x88CA
 #define ETH_P_MACSEC	0x88E5
 #define ETH_P_8021AH	0x88E7
@@ -61,13 +64,16 @@
 #define ETH_P_FCOE	0x8906
 #define ETH_P_TDLS	0x890D
 #define ETH_P_FIP	0x8914
+#define ETH_P_IBOE	0x8915
 #define ETH_P_80221	0x8917
 #define ETH_P_HSR	0x892F
+#define ETH_P_NSH	0x894F
 #define ETH_P_LOOPBACK	0x9000
 #define ETH_P_QINQ1	0x9100
 #define ETH_P_QINQ2	0x9200
 #define ETH_P_QINQ3	0x9300
 #define ETH_P_EDSA	0xDADA
+#define ETH_P_IFE	0xED3E
 #define ETH_P_AF_IUCV	0xFBFB
 
 #define ETH_P_802_3_MIN	0x0600
@@ -97,6 +103,7 @@
 #define ETH_P_IEEE802154 0x00F6
 #define ETH_P_CAIF	0x00F7
 #define ETH_P_XDSA	0x00F8
+#define ETH_P_MAP	0x00F9
 
 struct ethhdr {
 	uint8_t h_dest[ETH_ALEN];
@@ -130,5 +137,6 @@ do { \
 	(enaddr)[5] = ((uint8_t *)ipaddr)[3]; \
 } while(0)
 
+#define __UAPI_DEF_ETHHDR       0
 
 #endif

@@ -61,6 +61,7 @@
 #define __NR_quotactl 60
 #define __NR_getdents64 61
 #define __NR__llseek 62
+#define __NR_llseek 62
 #define __NR_read 63
 #define __NR_write 64
 #define __NR_readv 65
@@ -274,4 +275,5 @@
 #define __NR_pkey_mprotect 288
 #define __NR_pkey_alloc 289
 #define __NR_pkey_free 290
+#define __NR_statx 291
 

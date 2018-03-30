@@ -129,6 +129,7 @@ static size_t static_tls_cnt;
 static pthread_mutex_t init_fini_lock = { ._m_type = PTHREAD_MUTEX_RECURSIVE };
 static struct fdpic_loadmap *app_loadmap;
 static struct fdpic_dummy_loadmap app_dummy_loadmap;
+static struct dso *const nodeps_dummy;
 
 struct debug *_dl_debug_addr = &debug;
 
@@ -724,7 +725,6 @@ done_mapping:
 	dso->base = base;
 	dso->dynv = laddr(dso, dyn);
 	if (dso->tls.size) dso->tls.image = laddr(dso, tls_image);
-	if (!runtime) reclaim_gaps(dso);
 	free(allocated_buf);
 	return map;
 noexec:
@@ -807,7 +807,19 @@ static int fixup_rpath(struct dso *p, char *buf, size_t buf_size)
 		origin = p->name;
 	}
 	t = strrchr(origin, '/');
-	l = t ? t-origin : 0;
+	if (t) {
+		l = t-origin;
+	} else {
+		/* Normally p->name will always be an absolute or relative
+		 * pathname containing at least one '/' character, but in the
+		 * case where ldso was invoked as a command to execute a
+		 * program in the working directory, app.name may not. Fix. */
+		origin = ".";
+		l = 1;
+	}
+	/* Disallow non-absolute origins for suid/sgid/AT_SECURE. */
+	if (libc.secure && *origin != '/')
+		return 0;
 	p->rpath = malloc(strlen(p->rpath_orig) + n*l + 1);
 	if (!p->rpath) return -1;
 
@@ -1043,6 +1055,10 @@ static struct dso *load_library(const char *name, struct dso *needed_by)
 		unmap_library(&temp_dso);
 		return load_library("libc.so", needed_by);
 	}
+	/* Past this point, if we haven't reached runtime yet, ldso has
+	 * committed either to use the mapped library or to abort execution.
+	 * Unmapping is not possible, so we can safely reclaim gaps. */
+	if (!runtime) reclaim_gaps(&temp_dso);
 
 	/* Allocate storage for the new DSO. When there is TLS, this
 	 * storage must include a reservation for all pre-existing
@@ -1125,6 +1141,7 @@ static void load_deps(struct dso *p)
 			}
 		}
 	}
+	if (!*deps) *deps = (struct dso **)&nodeps_dummy;
 }
 
 static void load_preload(char *s)
@@ -1435,6 +1452,7 @@ _Noreturn void __dls3(size_t *sp)
 	size_t aux[AUX_CNT], *auxv;
 	size_t i;
 	char *env_preload=0;
+	char *replace_argv0=0;
 	size_t vdso_base;
 	int argc = *sp;
 	char **argv = (void *)(sp+1);
@@ -1519,6 +1537,10 @@ _Noreturn void __dls3(size_t *sp)
 				if (opt[7]=='=') env_preload = opt+8;
 				else if (opt[7]) *argv = 0;
 				else if (*argv) env_preload = *argv++;
+			} else if (!memcmp(opt, "argv0", 5)) {
+				if (opt[5]=='=') replace_argv0 = opt+6;
+				else if (opt[5]) *argv = 0;
+				else if (*argv) replace_argv0 = *argv++;
 			} else {
 				argv[0] = 0;
 			}
@@ -1538,13 +1560,11 @@ _Noreturn void __dls3(size_t *sp)
 			dprintf(2, "%s: cannot load %s: %s\n", ldname, argv[0], strerror(errno));
 			_exit(1);
 		}
-		runtime = 1;
 		Ehdr *ehdr = (void *)map_library(fd, &app);
 		if (!ehdr) {
 			dprintf(2, "%s: %s: Not a valid dynamic program\n", ldname, argv[0]);
 			_exit(1);
 		}
-		runtime = 0;
 		close(fd);
 		ldso.name = ldname;
 		app.name = argv[0];
@@ -1675,6 +1695,8 @@ _Noreturn void __dls3(size_t *sp)
 	debug.state = 0;
 	_dl_debug_state();
 
+	if (replace_argv0) argv[0] = replace_argv0;
+
 	errno = 0;
 
 	CRTJMP((void *)aux[AT_ENTRY], argv-1);
@@ -1742,7 +1764,8 @@ void *dlopen(const char *file, int mode)
 			free(p->funcdescs);
 			if (p->rpath != p->rpath_orig)
 				free(p->rpath);
-			free(p->deps);
+			if (p->deps != &nodeps_dummy)
+				free(p->deps);
 			unmap_library(p);
 			free(p);
 		}
@@ -1768,19 +1791,24 @@ void *dlopen(const char *file, int mode)
 	}
 
 	/* First load handling */
-	if (!p->deps) {
+	int first_load = !p->deps;
+	if (first_load) {
 		load_deps(p);
 		if (!p->relocated && (mode & RTLD_LAZY)) {
 			prepare_lazy(p);
-			if (p->deps) for (i=0; p->deps[i]; i++)
+			for (i=0; p->deps[i]; i++)
 				if (!p->deps[i]->relocated)
 					prepare_lazy(p->deps[i]);
 		}
+	}
+	if (first_load || (mode & RTLD_GLOBAL)) {
 		/* Make new symbols global, at least temporarily, so we can do
 		 * relocations. If not RTLD_GLOBAL, this is reverted below. */
 		add_syms(p);
-		if (p->deps) for (i=0; p->deps[i]; i++)
+		for (i=0; p->deps[i]; i++)
 			add_syms(p->deps[i]);
+	}
+	if (first_load) {
 		reloc_all(p);
 	}
 
@@ -1878,7 +1906,7 @@ static void *do_dlsym(struct dso *p, const char *s, void *ra)
 		return p->funcdescs + (sym - p->syms);
 	if (sym && sym->st_value && (1<<(sym->st_info&0xf) & OK_TYPES))
 		return laddr(p, sym->st_value);
-	if (p->deps) for (i=0; p->deps[i]; i++) {
+	for (i=0; p->deps[i]; i++) {
 		if ((ght = p->deps[i]->ghashtab)) {
 			if (!gh) gh = gnu_hash(s);
 			sym = gnu_lookup(gh, ght, p->deps[i], s);
@@ -1945,7 +1973,7 @@ int dladdr(const void *addr, Dl_info *info)
 		best = p->funcdescs + (bestsym - p->syms);
 
 	info->dli_fname = p->name;
-	info->dli_fbase = p->base;
+	info->dli_fbase = p->map;
 	info->dli_sname = strings + bestsym->st_name;
 	info->dli_saddr = best;
 

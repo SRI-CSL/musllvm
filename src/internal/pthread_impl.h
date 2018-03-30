@@ -13,11 +13,15 @@
 #define pthread __pthread
 
 struct pthread {
+	/* Part 1 -- these fields may be external or
+	 * internal (accessed via asm) ABI. Do not change. */
 	struct pthread *self;
 	void **dtv, *unused1, *unused2;
 	uintptr_t sysinfo;
 	uintptr_t canary, canary2;
 	pid_t tid, pid;
+
+	/* Part 2 -- implementation details, non-ABI. */
 	int tsd_used, errno_val;
 	volatile int cancel, canceldisable, cancelasync;
 	int detached;
@@ -39,13 +43,17 @@ struct pthread {
 	int unblock_cancel;
 	volatile int timer_id;
 	locale_t locale;
-	volatile int killlock[2];
-	volatile int exitlock[2];
+	volatile int killlock[1];
+	volatile int exitlock[1];
 	volatile int startlock[2];
 	unsigned long sigmask[_NSIG/8/sizeof(long)];
 	char *dlerror_buf;
 	int dlerror_flag;
 	void *stdio_locks;
+	size_t guard_size;
+
+	/* Part 3 -- the positions of these fields relative to
+	 * the end of the structure is external and internal ABI. */
 	uintptr_t canary_at_end;
 	void **dtv_copy;
 };
@@ -131,10 +139,16 @@ int __timedwait_cp(volatile int *, int, clockid_t, const struct timespec *, int)
 void __wait(volatile int *, volatile int *, int, int);
 static inline void __wake(volatile void *addr, int cnt, int priv)
 {
-	if (priv) priv = 128;
+	if (priv) priv = FUTEX_PRIVATE;
 	if (cnt<0) cnt = INT_MAX;
 	__syscall(SYS_futex, addr, FUTEX_WAKE|priv, cnt) != -ENOSYS ||
 	__syscall(SYS_futex, addr, FUTEX_WAKE, cnt);
+}
+static inline void __futexwait(volatile void *addr, int val, int priv)
+{
+	if (priv) priv = FUTEX_PRIVATE;
+	__syscall(SYS_futex, addr, FUTEX_WAIT|priv, val) != -ENOSYS ||
+	__syscall(SYS_futex, addr, FUTEX_WAIT, val);
 }
 
 void __acquire_ptc(void);

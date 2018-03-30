@@ -100,6 +100,12 @@ static int match_in_dir(const char *d, const char *p, int flags, int (*errfunc)(
 			continue;
 		if (p2 && de->d_type && !S_ISDIR(de->d_type<<12) && !S_ISLNK(de->d_type<<12))
 			continue;
+		/* With GLOB_PERIOD, don't allow matching . or .. unless
+		 * fnmatch would match them with FNM_PERIOD rules in effect. */
+		if (p2 && (flags & GLOB_PERIOD) && de->d_name[0]=='.'
+		    && (!de->d_name[1] || de->d_name[1]=='.' && !de->d_name[2])
+		    && fnmatch(p, de->d_name, fnm_flags | FNM_PERIOD))
+			continue;
 		if (*d) {
 			memcpy(name, d, l);
 			name[l] = '/';
@@ -179,7 +185,7 @@ int glob(const char *restrict pat, int flags, int (*errfunc)(const char *path, i
 
 	if (strnlen(p, PATH_MAX+1) > PATH_MAX) return GLOB_NOSPACE;
 
-	if (*p) error = match_in_dir(d, p, flags, errfunc, &tail);
+	if (*pat) error = match_in_dir(d, p, flags, errfunc, &tail);
 	if (error == GLOB_NOSPACE) {
 		freelist(&head);
 		return error;
