@@ -15,23 +15,39 @@ At the moment `--target=LLVM` behaves more like a `--no-asm`
 switch, eliminating all the assembly for which there are vanilla C definitions.
 
 
-## Recipe for libc.so.bc
+## Recipe for libc.so.bc using gllvm
 
-Install [wllvm.](https://github.com/SRI-CSL/whole-program-llvm.git)
-Then:
-
+Install [gllvm,](https://github.com/SRI-CSL/gllvm.git)
+then configure via:
 ```
-WLLVM_CONFIGURE_ONLY=1  CC=wllvm ./configure --target=LLVM --build=LLVM --prefix=<install dir>
+CC=gclang WLLVM_CONFIGURE_ONLY=1  ./configure --target=LLVM --build=LLVM --prefix=<install dir>
+```
+Then proceed via
+```
 make
 cd lib
-extract-bc --bitcode libc.a
+get-bc -b libc.a
+cp libc.a.bc  <wherever you want your static bitcode library to live>
+get-bc libc.so
+cp libc.so.bc  <wherever you want your shared bitcode library to live>
+```
+
+## Recipe for libc.so.bc using wllvm
+
+Install [wllvm,](https://github.com/SRI-CSL/whole-program-llvm.git)
+then configure via:
+```
+CC=wllvm WLLVM_CONFIGURE_ONLY=1  ./configure --target=LLVM --build=LLVM --prefix=<install dir>
+```
+Then proceed via
+```
+make
+cd lib
+extract-bc -b libc.a
 cp libc.a.bc  <wherever you want your static bitcode library to live>
 extract-bc libc.so
 cp libc.so.bc  <wherever you want your shared bitcode library to live>
 ```
-Note the `--bitcode` option is a recent addition to `wllvm` and currently
-only available in [SRI's fork](https://github.com/SRI-CSL/whole-program-llvm),
-I will eventually push it up stream, but have not yet. 
 
 ## Ian's notes on what to do with the bitcode
 
