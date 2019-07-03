@@ -1,8 +1,11 @@
 #define _GNU_SOURCE
 #include <stddef.h>
+#include <stdlib.h>
+#include <limits.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <string.h>
+#include "stdio_impl.h"
 
 extern int __optpos, __optreset;
 
@@ -15,8 +18,6 @@ static void permute(char *const *argv, int dest, int src)
 		av[i] = av[i-1];
 	av[dest] = tmp;
 }
-
-void __getopt_msg(const char *, const char *, const char *, size_t);
 
 static int __getopt_long_core(int argc, char *const *argv, const char *optstring, const struct option *longopts, int *idx, int longonly);
 
@@ -58,10 +59,10 @@ static int __getopt_long_core(int argc, char *const *argv, const char *optstring
 	{
 		int colon = optstring[optstring[0]=='+'||optstring[0]=='-']==':';
 		int i, cnt, match;
-		char *arg, *opt;
+		char *arg, *opt, *start = argv[optind]+1;
 		for (cnt=i=0; longopts[i].name; i++) {
 			const char *name = longopts[i].name;
-			opt = argv[optind]+1;
+			opt = start;
 			if (*opt == '-') opt++;
 			while (*opt && *opt != '=' && *opt == *name)
 				name++, opt++;
@@ -73,6 +74,17 @@ static int __getopt_long_core(int argc, char *const *argv, const char *optstring
 				break;
 			}
 			cnt++;
+		}
+		if (cnt==1 && longonly && arg-start == mblen(start, MB_LEN_MAX)) {
+			int l = arg-start;
+			for (i=0; optstring[i]; i++) {
+				int j;
+				for (j=0; j<l && start[j]==optstring[i+j]; j++);
+				if (j==l) {
+					cnt++;
+					break;
+				}
+			}
 		}
 		if (cnt==1) {
 			i = match;

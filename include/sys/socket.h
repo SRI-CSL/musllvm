@@ -109,7 +109,8 @@ struct linger {
 #define PF_KCM          41
 #define PF_QIPCRTR      42
 #define PF_SMC          43
-#define PF_MAX          44
+#define PF_XDP          44
+#define PF_MAX          45
 
 #define AF_UNSPEC       PF_UNSPEC
 #define AF_LOCAL        PF_LOCAL
@@ -158,6 +159,7 @@ struct linger {
 #define AF_KCM          PF_KCM
 #define AF_QIPCRTR      PF_QIPCRTR
 #define AF_SMC          PF_SMC
+#define AF_XDP          PF_XDP
 #define AF_MAX          PF_MAX
 
 #ifndef SO_DEBUG
@@ -183,6 +185,7 @@ struct linger {
 #define SO_RCVTIMEO     20
 #define SO_SNDTIMEO     21
 #define SO_ACCEPTCONN   30
+#define SO_PEERSEC      31
 #define SO_SNDBUFFORCE  32
 #define SO_RCVBUFFORCE  33
 #define SO_PROTOCOL     38
@@ -203,7 +206,6 @@ struct linger {
 #define SO_TIMESTAMP            29
 #define SCM_TIMESTAMP           SO_TIMESTAMP
 
-#define SO_PEERSEC              31
 #define SO_PASSSEC              34
 #define SO_TIMESTAMPNS          35
 #define SCM_TIMESTAMPNS         SO_TIMESTAMPNS
@@ -233,6 +235,8 @@ struct linger {
 #define SCM_TIMESTAMPING_PKTINFO 58
 #define SO_PEERGROUPS           59
 #define SO_ZEROCOPY             60
+#define SO_TXTIME               61
+#define SCM_TXTIME              SO_TXTIME
 
 #ifndef SOL_SOCKET
 #define SOL_SOCKET      1
@@ -265,6 +269,7 @@ struct linger {
 #define SOL_NFC         280
 #define SOL_KCM         281
 #define SOL_TLS         282
+#define SOL_XDP         283
 
 #define SOMAXCONN       128
 

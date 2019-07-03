@@ -9,7 +9,7 @@
 
 /* Support signed or unsigned plain-char */
 
-#if '\0'-1 > 0
+#if '\xff' > 0
 #define CHAR_MIN 0
 #define CHAR_MAX 255
 #else
@@ -42,7 +42,6 @@
 #define PIPE_BUF 4096
 #define FILESIZEBITS 64
 #define NAME_MAX 255
-#define SYMLINK_MAX 255
 #define PATH_MAX 4096
 #define NGROUPS_MAX 32
 #define ARG_MAX 131072

@@ -2,11 +2,10 @@
 #include <stdint.h>
 #include <limits.h>
 #include <errno.h>
-#include "libc.h"
+#include "lock.h"
+#include "malloc_impl.h"
 
 #define ALIGN 16
-
-void *__expand_heap(size_t *);
 
 static void *__simple_malloc(size_t n)
 {
@@ -47,4 +46,14 @@ static void *__simple_malloc(size_t n)
 }
 
 weak_alias(__simple_malloc, malloc);
-weak_alias(__simple_malloc, __malloc0);
+
+static void *__simple_calloc(size_t m, size_t n)
+{
+	if (n && m > (size_t)-1/n) {
+		errno = ENOMEM;
+		return 0;
+	}
+	return __simple_malloc(n * m);
+}
+
+weak_alias(__simple_calloc, calloc);

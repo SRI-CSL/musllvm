@@ -5,6 +5,7 @@
 #include <sys/types.h>
 
 #define ETH_ALEN	6
+#define ETH_TLEN	2
 #define ETH_HLEN	14
 #define ETH_ZLEN	60
 #define ETH_DATA_LEN	1500
@@ -17,6 +18,7 @@
 #define ETH_P_PUP	0x0200
 #define ETH_P_PUPAT	0x0201
 #define ETH_P_TSN	0x22F0
+#define ETH_P_ERSPAN2	0x22EB
 #define ETH_P_IP	0x0800
 #define ETH_P_X25	0x0805
 #define ETH_P_ARP	0x0806
@@ -54,6 +56,7 @@
 #define ETH_P_8021AD	0x88A8
 #define ETH_P_802_EX1	0x88B5
 #define ETH_P_ERSPAN	0x88BE
+#define ETH_P_PREAUTH	0x88C7
 #define ETH_P_TIPC	0x88CA
 #define ETH_P_MACSEC	0x88E5
 #define ETH_P_8021AH	0x88E7
